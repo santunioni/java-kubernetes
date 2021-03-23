@@ -1,3 +1,4 @@
+[TOC]
 # Java and Kubernetes
 
 Show how you can move your spring boot application to docker and kubernetes.
@@ -8,9 +9,9 @@ https://dev.to/sandrogiacom/kubernetes-for-java-developers-setup-41nk
 
 ### Requirements:
 
-**Docker and Make (Optional)**
+- **Docker and Make (Optional)**
 
-**Java 15**
+- **Java 11**
 
 Help to install tools:
 
@@ -20,251 +21,250 @@ https://github.com/sandrogiacom/k8s
 
 Spring boot and mysql database running on docker
 
-**Clone from repository**
-```bash
-git clone https://github.com/sandrogiacom/java-kubernetes.git
-```
+1. **Clone from repository**
 
-**Build application**
-```bash
-cd java-kubernetes
-mvn clean install
-```
+    1. `git clone https://github.com/sandrogiacom/java-kubernetes.git`
+    2. `cd java-kubernetes`
 
-**Start the database**
-```bash
-make run-db
-```
+2. **Build application**
 
-**Run application**
-```bash
-java --enable-preview -jar target/java-kubernetes.jar
-```
+   `mvn clean install`
 
-**Check**
+3. **Start the database**
 
-http://localhost:8080/app/users
+    1. `docker run --name mysql57 -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_USER=java -e MYSQL_PASSWORD=1234 -e MYSQL_DATABASE=k8s_java -d mysql/mysql-server:5.7` command  to run containerized MySQL   
 
-http://localhost:8080/app/hello
+    **OR**    
+
+    1. use the alias `make run-db`
+
+4. **Run application locally**
+
+   `java --enable-preview -jar target/java-kubernetes.jar`
+
+5. **Check**
+
+   http://localhost:8080/app/users
+
+   http://localhost:8080/app/hello
 
 ## Part two - app on Docker:
 
-Create a Dockerfile:
+1. **Create a Dockerfile:**
 
-```yaml
-FROM openjdk:15-alpine
-RUN mkdir /usr/myapp
-COPY target/java-kubernetes.jar /usr/myapp/app.jar
-WORKDIR /usr/myapp
-EXPOSE 8080
-ENTRYPOINT [ "sh", "-c", "java --enable-preview $JAVA_OPTS -jar app.jar" ]
-```
+    ```yaml
+    FROM openjdk:11
+    RUN mkdir /usr/myapp
+    COPY target/java-kubernetes.jar /usr/myapp/app.jar
+    WORKDIR /usr/myapp
+    EXPOSE 8080
+    ENTRYPOINT [ "sh", "-c", "java --enable-preview $JAVA_OPTS -jar app.jar" ]
+    ```
 
-**Build application and docker image**
+2. **Build application and docker image**    
 
-```bash
-make build
-```
+    1. `./mvnw clean install` build the app locally
+    2. `docker build -f Dockerfile --force-rm -t java-k8s .` build a docker image with the app content 
 
-Create and run the database
-```bash
-make run-db
-```
+    **OR**
 
-Create and run the application
-```bash
-make run-app
-```
+    1. use the alias `make build`
 
-**Check**
+3. **Create and run the database**    
 
-http://localhost:8080/app/users
+    1. `docker run --name mysql57 -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_USER=java -e MYSQL_PASSWORD=1234 -e MYSQL_DATABASE=k8s_java -d mysql/mysql-server:5.7` command to run containerized MySQL
 
-http://localhost:8080/app/hello
+    **OR**
 
-Stop all:
+    1. use the alias `make run-db`
 
-`
-docker stop mysql57 myapp
-`
+
+4. **Create and run the application**    
+
+    1. `docker run --name myapp -p 8080:8080 -d -e DATABASE_SERVER_NAME=mysql57 --link mysql57:mysql57 java-k8s` command to run containerized application from the image built
+
+    **OR**
+
+    1. use the alias `make run-app`
+
+5. **Check**
+
+    http://localhost:8080/app/users    
+    http://localhost:8080/app/hello    
+
+6. **Stop all** (if you want)
+    `docker stop mysql57 myapp`
 
 ## Part three - app on Kubernetes:
 
-We have an application and image running in docker
-Now, we deploy application in a kubernetes cluster running in our machine
+We have an application and image running in docker. Now, we deploy application in a kubernetes cluster running in our machine.
 
-Prepare
+### Prepare
 
-### Start minikube
-`
-make k-setup
-`
- start minikube, enable ingress and create namespace dev-to
+1. **Start minikube**    
 
-### Check IP
+    1. `minikube -p dev.to start --cpus 2 --memory=4096` start minikube
+    2. `minikube -p dev.to addons enable ingress` enable ingress
+    3. `minikube -p dev.to addons enable metrics-server` enable metrics-server for inspections
+    4. `kubectl create namespace dev-to` create namespace dev-to for organizing
 
-`
-minikube -p dev.to ip
-`
+    **OR**
 
-### Minikube dashboard
+    1. use the alias `make k-setup`
 
-`
-minikube -p dev.to dashboard
-`
+2. **Check IP**    
+    `minikube -p dev.to ip`
 
-### Deploy database
+### Dashboard
 
-create mysql deployment and service
+3. **Inspect dashboard** 
+    `minikube -p dev.to dashboard`
 
-`
-make k-deploy-db
-`
+### Database
 
-`
-kubectl get pods -n dev-to
-`
+4. **Deploy database**    
 
-OR
+    1. `kubectl apply -f k8s/mysql/`
 
-`
-watch k get pods -n dev-to
-`
+    **OR**
+
+    1. use the alias `make k-deploy-db`
+    
+    **check the <pod_name> with** `watch kubectl get pods -n dev-to`
+    
+
+create MySQL deployment and service
+
+5. **Check the logs**    
+    `kubectl logs -n dev-to -f <pod_name>`
+
+6. **Foward the database port to localhost**    
+    `kubectl port-forward -n dev-to <pod_name> 3306:3306`
 
 
-`
-kubectl logs -n dev-to -f <pod_name>
-`
 
-`
-kubectl port-forward -n dev-to <pod_name> 3306:3306
-`
+### Application
 
-## Build application and deploy
+**Choose one of the two options:**
 
-build app
+#### Build app inside Kubernetes
 
-`
-make k-build-app
-` 
+7. **Build app inside Kubernetes**   
 
-create docker image inside minikube machine:
+    1. `mvn clean install` build app in local machine   
+    2. `docker build --force-rm -t java-k8s .` build the docker image copying the app content to container`   
 
-`
-make k-build-image
-`
+    **OR**   
 
-OR
+    1. use the alias `make k-build-app`   
 
-`
-make k-cache-image
-`  
+8. **Create docker image inside minikube machine**:   
 
-create app deployment and service:
+    1. `eval $$(minikube -p dev.to docker-env) && docker build --force-rm -t java-k8s .`   
 
-`
-make k-deploy-app
-` 
+    **OR**   
 
-**Check**
+    1. use the alias `k-build-image`   
 
-`
-kubectl get services -n dev-to
-`
+#### Cache your already created Docker image to kubernetes
 
-To access app:
+7. **Push the already created image to Kubernetes**   
 
-`
-minikube -p dev.to service -n dev-to myapp --url
-`
+    1. `minikube cache add java-k8s`   
 
-Ex:
+    **OR**   
 
-http://172.17.0.3:32594/app/users
-http://172.17.0.3:32594/app/hello
+    1. use the alias `make k-cache-image`   
 
-## Check pods
 
-`
-kubectl get pods -n dev-to
-`
+8. **Create app deployment and service**   
 
-`
-kubectl -n dev-to logs myapp-6ccb69fcbc-rqkpx
-`
+    1. `kubectl apply -f k8s/app/`   
 
-## Map to dev.local
+    **OR**   
 
-get minikube IP
-`
-minikube -p dev.to ip
-` 
+    1. use the alias `make k-deploy-app`   
 
-Edit `hosts` 
+### Inpections
 
-`
-sudo vim /etc/hosts
-`
+9. **Check service**
 
-Replicas
-`
-kubectl get rs -n dev-to
-`
+    1. `kubectl get services -n dev-to` check the services    
+    2. `minikube -p dev.to service -n dev-to myapp --url` access app    
+    Ip examples:    
+       - http://172.17.0.3:32594/app/users    
+       - http://172.17.0.3:32594/app/hello    
 
-Get and Delete pod
-`
-kubectl get pods -n dev-to
-`
+10. **Check pods**    
 
-`
-kubectl delete pod -n dev-to myapp-f6774f497-82w4r
-`
+    `kubectl get pods -n dev-to`
+    `kubectl -n dev-to logs myapp-6ccb69fcbc-rqkpx`
 
-Scale
-`
-kubectl -n dev-to scale deployment/myapp --replicas=2
-`
+### Map to dev.local
 
-Test replicas
-`
-while true
-do curl "http://dev.local/app/hello"
-echo
-sleep 2
-done
-`
-Test replicas with wait
+11. **Map the minikube to dev.local**    
+    `minikube -p dev.to ip` 
 
-`
-while true
-do curl "http://dev.local/app/wait"
-echo
-done
-`
+12. **Edit `hosts`** 
+    ```bash
+    sudo vim /etc/hosts
+    ```
 
-## Check app url
-`minikube -p dev.to service -n dev-to myapp --url`
+12. **Replicas**
+    ```bash
+    kubectl get rs -n dev-to
+    ```
 
-Change your IP and PORT as you need it
+12. **Get and Delete pod**
+    ```bash
+    kubectl get pods -n dev-to
+    kubectl delete pod -n dev-to myapp-f6774f497-82w4r
+    ```
 
-`
-curl -X GET http://dev.local/app/users
-`
+12. **Scale**
+    ```bash
+    kubectl -n dev-to scale deployment/myapp --replicas=2
+    ```
 
-Add new User
-`
-curl --location --request POST 'http://dev.local/app/users' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "name": "new user",
-    "birthDate": "2010-10-01"
-}'
-`
+12. **Test replicas**
+    ```bash
+    while true
+    do curl "http://dev.local/app/hello"
+    echo
+    sleep 2
+    done
+    ```
+
+12. **Test replicas with wait**
+    ```bash
+    while true
+    do curl "http://dev.local/app/wait"
+    echo
+    done
+    ```
+
+### Check app url
+
+12. **Check URL**    
+    `minikube -p dev.to service -n dev-to myapp --url`
+
+12. **Change your IP and PORT as you need it**    
+    `curl -X GET http://dev.local/app/users`
+
+12. **Add new User**
+    ```bash
+    curl --location --request POST 'http://dev.local/app/users' \
+    --header 'Content-Type: application/json' \
+    --data-raw '{
+        "name": "new user",
+        "birthDate": "2010-10-01"
+    }'
+    ```
 
 ## Part four - debug app:
 
 add   JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n"
- 
+
 change CMD to ENTRYPOINT on Dockerfile
 
 `
