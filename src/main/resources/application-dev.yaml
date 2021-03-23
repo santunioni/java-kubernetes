@@ -4,4 +4,6 @@ spring:
     username: ${DATABASE_USER_NAME:java}
     password: ${DATABASE_USER_PASSWORD:1234}
   # dont do this in production!!
-  jpa.hibernate.ddl-auto: update
+  jpa:
+    hibernate:
+      ddl-auto: create
