@@ -1,4 +1,5 @@
 spring:
+  lifecycle.timeout-per-shutdown-phase: 30s
   datasource:
     url: jdbc:mysql://${DATABASE_SERVER_NAME}:3306/k8s_java
     username: ${DATABASE_USER_NAME}
