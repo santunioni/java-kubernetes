@@ -37,7 +37,7 @@ run-db: stop-db rm-db
 	docker run --name mysql57 -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_USER=java -e MYSQL_PASSWORD=1234 -e MYSQL_DATABASE=k8s_java -d mysql/mysql-server:5.7
 
 run-app: stop-app rm-app
-	docker run --name myapp -p 8080:8080 -d -e DATABASE_SERVER_NAME=mysql57 --link mysql57:mysql57 java-k8s:latest
+	docker run --name myapp -p 8080:8080 -d -e DATABASE_SERVER_NAME=mysql57 --link mysql57:mysql57 rajkrrsingh/java-k8s:latest
 
 stop-app:
 	- docker stop myapp
@@ -94,4 +94,3 @@ check:
 	echo "make version " && make --version && echo
 	minikube version && echo
 	echo "kubectl version" && kubectl version --short --client && echo
-

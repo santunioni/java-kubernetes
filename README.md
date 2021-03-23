@@ -10,7 +10,7 @@ https://dev.to/sandrogiacom/kubernetes-for-java-developers-setup-41nk
 
 **Docker and Make (Optional)**
 
-**Java 11**
+**Java 15**
 
 Help to install tools:
 
@@ -52,7 +52,7 @@ http://localhost:8080/app/hello
 Create a Dockerfile:
 
 ```yaml
-FROM openjdk:11-alpine
+FROM openjdk:15-alpine
 RUN mkdir /usr/myapp
 COPY target/java-kubernetes.jar /usr/myapp/app.jar
 WORKDIR /usr/myapp
