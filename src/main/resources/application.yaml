@@ -1,4 +1,6 @@
-spring.profiles.active: dev
+spring:
+  lifecycle.timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:30s}
+  profiles.active: ${SPRING_PROFILE:dev}
 
 info.app:
     name: java-kubernetes
