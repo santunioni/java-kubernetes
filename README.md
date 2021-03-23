@@ -1,8 +1,9 @@
 [TOC]
+
 # Java and Kubernetes
 
 Show how you can move your spring boot application to docker and kubernetes.
-This project is a demo for the series of posts on dev.to
+This project is a demo for the series of posts on [dev.to](https://dev.to/)
 https://dev.to/sandrogiacom/kubernetes-for-java-developers-setup-41nk
 
 ## Part one - base app:
@@ -21,7 +22,7 @@ https://github.com/sandrogiacom/k8s
 
 Spring boot and mysql database running on docker
 
-1. **Clone from repository**
+1. **Clone from github repository**
 
     1. `git clone https://github.com/sandrogiacom/java-kubernetes.git`
     2. `cd java-kubernetes`
@@ -32,7 +33,7 @@ Spring boot and mysql database running on docker
 
 3. **Start the database**
 
-    1. `docker run --name mysql57 -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_USER=java -e MYSQL_PASSWORD=1234 -e MYSQL_DATABASE=k8s_java -d mysql/mysql-server:5.7` command  to run containerized MySQL   
+    1. `docker run --name mysql57 -p 3306:3306 -e MYSQL_ROOT_PASSWORD=123456 -e MYSQL_USER=java -e MYSQL_PASSWORD=1234 -e MYSQL_DATABASE=k8s_java -d mysql/mysql-server:5.7` command to run containerized MySQL   
 
     **OR**    
 
@@ -92,150 +93,177 @@ Spring boot and mysql database running on docker
     http://localhost:8080/app/users    
     http://localhost:8080/app/hello    
 
-6. **Stop all** (if you want)
+6. **Stop all** (if you want)    
     `docker stop mysql57 myapp`
 
 ## Part three - app on Kubernetes:
 
-We have an application and image running in docker. Now, we deploy application in a kubernetes cluster running in our machine.
+We have an application in a docker container. Now, we deploy application in a kubernetes cluster running in our machine.
 
 ### Prepare
 
 1. **Start minikube**    
 
-    1. `minikube -p dev.to start --cpus 2 --memory=4096` start minikube
-    2. `minikube -p dev.to addons enable ingress` enable ingress
-    3. `minikube -p dev.to addons enable metrics-server` enable metrics-server for inspections
-    4. `kubectl create namespace dev-to` create namespace dev-to for organizing
+    1. start minikube with profile `dev.to` (create a cluster `dev.to` with a control plane node also called `dev.to`)    
+    `minikube -p dev.to start --cpus 2 --memory=4096`
+    2. enable ingress (proxy reverso que roda em cima do nginx)    
+    `minikube -p dev.to addons enable ingress`
+    3. enable metrics-server for inspections    
+    `minikube -p dev.to addons enable metrics-server`    
+    4. create a namespace dev-to for organizing    
+    `minikube -p dev.to kubectl create namespace dev-to`    
 
     **OR**
 
-    1. use the alias `make k-setup`
+    1. use the alias    
+    `make k-setup`
 
-2. **Check IP**    
+2. **Check the profile IP**    
     `minikube -p dev.to ip`
 
 ### Dashboard
 
-3. **Inspect dashboard** 
+3. **Inspect dashboard**    
     `minikube -p dev.to dashboard`
 
 ### Database
 
 4. **Deploy database**    
 
-    1. `kubectl apply -f k8s/mysql/`
+    1. optional: pull the MySQL image    
+    `docker pull mysql/mysql-server:5.7`  
+    1. optional: cache the image to the cluster    
+    `minikube -p dev.to cache add mysql/mysql-server:5.7`    
+    1. apply the [kubernetes scripts](k8s/mysql) to create MySQL deployment and service. (The images will be downloaded from inside the cluster if not already pulled.)  
+    `kubectl apply -f k8s/mysql/`
 
     **OR**
 
-    1. use the alias `make k-deploy-db`
+    1. use the alias    
+    `make k-deploy-db`    
     
-    **check the <pod_name> with** `watch kubectl get pods -n dev-to`
-    
-
-create MySQL deployment and service
-
+    **check the <pod_name>**    
+    `kubectl get pods -n dev-to`
+   
 5. **Check the logs**    
     `kubectl logs -n dev-to -f <pod_name>`
 
-6. **Foward the database port to localhost**    
+6. **Forward the database port to localhost**    
     `kubectl port-forward -n dev-to <pod_name> 3306:3306`
 
+### Prepare Application
 
-
-### Application
+7. **Build app locally**    
+    `./mvnw clean install`
 
 **Choose one of the two options:**
 
-#### Build app inside Kubernetes
+#### (First option) Cache your already created Docker image to kubernetes
 
-7. **Build app inside Kubernetes**   
+8. **Build app Docker image**   
 
-    1. `mvn clean install` build app in local machine   
-    2. `docker build --force-rm -t java-k8s .` build the docker image copying the app content to container`   
-
-    **OR**   
-
-    1. use the alias `make k-build-app`   
-
-8. **Create docker image inside minikube machine**:   
-
-    1. `eval $$(minikube -p dev.to docker-env) && docker build --force-rm -t java-k8s .`   
+    1. build a docker image with the app content    
+    `docker build -f Dockerfile  --force-rm -t java-k8s:latest .`   
 
     **OR**   
 
-    1. use the alias `k-build-image`   
-
-#### Cache your already created Docker image to kubernetes
+    1. use the alias    
+    `make k-build-app`  
 
 7. **Push the already created image to Kubernetes**   
 
-    1. `minikube cache add java-k8s`   
+    1. `minikube -p dev.to cache add java-k8s:latest`   
 
     **OR**   
 
-    1. use the alias `make k-cache-image`   
+    1. use the alias    
+    `make k-cache-image`   
 
+#### (Second option) Build image inside Kubernetes
+ 
 
-8. **Create app deployment and service**   
+8. **Create docker image inside minikube machine**:   
 
-    1. `kubectl apply -f k8s/app/`   
+    1. `eval $(minikube -p dev.to docker-env) && docker build -f Dockerfile --force-rm -t java-k8s:latest .`   
 
     **OR**   
 
-    1. use the alias `make k-deploy-app`   
+    1. use the alias    
+    `k-build-image`   
 
-### Inpections
+### Deploy Application
 
-9. **Check service**
+10. **Create app deployment and service**   
 
-    1. `kubectl get services -n dev-to` check the services    
-    2. `minikube -p dev.to service -n dev-to myapp --url` access app    
-    Ip examples:    
-       - http://172.17.0.3:32594/app/users    
-       - http://172.17.0.3:32594/app/hello    
+    1. apply the [kubernetes scripts](k8s/app)    
+    `kubectl apply -f k8s/app/`   
+
+    **OR**   
+
+    1. use the alias    
+    `make k-deploy-app`   
+
+### Inspections
+
+11. **SSH the cluster**    
+    `minikube -p dev.to ssh`    
+    **OR** (as root)    
+    `docker exec -it dev.to bash`
+
+11. **Check service**    
+    `kubectl get services -n dev-to`   
+
+11. **Check IP**    
+    - profile IP    
+    `minikube -p dev.to ip`   
+    - service IP inside the `dev.to` profile    
+    `minikube -p dev.to service myapp -n dev-to --url`    
+    - service IP inside the `minikube` profile    
+    `minikube service myapp -n dev-to --url`  
+
+10. **Edit `hosts`**: map the correct IP: "<ip>	dev.local"
+    1. open the file to edit/insert the mapping   
+    `sudo vim /etc/hosts`  
+
+    **OR**    
+
+    1. insert the mapping directly    
+    `sudo echo "<ip>	dev.local" >> /etc/hosts`
+
+10. **Test (change your IP and PORT as you need)**
+
+    1. **Get users**    
+    `curl -X GET http://dev.local/app/users`    
+
+    2. **Post new User**    
+    `curl --location --request POST 'http://dev.local/app/users' --header 'Content-Type: application/json' --data-raw ' {"name": "new user", "birthDate": "2010-10-01"}'`    
+  
 
 10. **Check pods**    
+    `kubectl get pods -n dev-to`    
+    `kubectl -n dev-to logs myapp-<xxxxxxxxx-xxxx>`
+### Manage infrastructure
 
-    `kubectl get pods -n dev-to`
-    `kubectl -n dev-to logs myapp-6ccb69fcbc-rqkpx`
+10. **Check replicas**    
+    `kubectl get rs -n dev-to`    
 
-### Map to dev.local
+10. **Delete pod**    
+    `kubectl get pods -n dev-to`    
+    `kubectl delete pod -n dev-to myapp-<xxxxxxxx-xxxx>`    
 
-11. **Map the minikube to dev.local**    
-    `minikube -p dev.to ip` 
+10. **Scale**    
+    `kubectl -n dev-to scale deployment/myapp --replicas=2`
 
-12. **Edit `hosts`** 
-    ```bash
-    sudo vim /etc/hosts
-    ```
-
-12. **Replicas**
-    ```bash
-    kubectl get rs -n dev-to
-    ```
-
-12. **Get and Delete pod**
-    ```bash
-    kubectl get pods -n dev-to
-    kubectl delete pod -n dev-to myapp-f6774f497-82w4r
-    ```
-
-12. **Scale**
-    ```bash
-    kubectl -n dev-to scale deployment/myapp --replicas=2
-    ```
-
-12. **Test replicas**
+10. **Test replicas**
     ```bash
     while true
     do curl "http://dev.local/app/hello"
     echo
-    sleep 2
+    sleep 0.5
     done
     ```
 
-12. **Test replicas with wait**
+10. **Test replicas with wait**
     ```bash
     while true
     do curl "http://dev.local/app/wait"
@@ -243,66 +271,50 @@ create MySQL deployment and service
     done
     ```
 
-### Check app url
+### Debug app within Kubernetes:
 
-12. **Check URL**    
-    `minikube -p dev.to service -n dev-to myapp --url`
+1. Add the following environment variable to app-configmap.yaml as data.JAVA_OPTS    
+    `data.JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n"`
 
-12. **Change your IP and PORT as you need it**    
-    `curl -X GET http://dev.local/app/users`
-
-12. **Add new User**
-    ```bash
-    curl --location --request POST 'http://dev.local/app/users' \
-    --header 'Content-Type: application/json' \
-    --data-raw '{
-        "name": "new user",
-        "birthDate": "2010-10-01"
-    }'
-    ```
-
-## Part four - debug app:
-
-add   JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n"
-
-change CMD to ENTRYPOINT on Dockerfile
-
-`
-kubectl get pods -n=dev-to
-`
-
-`
-kubectl port-forward -n=dev-to <pod_name> 5005:5005
-`
+2. Change CMD to ENTRYPOINT on Dockerfile    
+    1. find one pod name for the service you want    
+    `kubectl get pods -n=dev-to`    
+    2. forward the port open for debugging to local-machine    
+    `kubectl port-forward -n dev-to <pod_name> 5005:5005`
+3. Configure a remote debug in IntelliJ
 
 ## KubeNs and Stern
 
-`
-kubens dev-to
-`
-
-`
-stern myapp
-` 
-
-## Start all
-
-`make k:all`
-
-
+`kubens dev-to`    
+`stern myapp` 
 ## References
-
-https://kubernetes.io/docs/home/
-
+https://kubernetes.io/docs/home/    
 https://minikube.sigs.k8s.io/docs/
 
 ## Useful commands
 
-```
-##List profiles
-minikube profile list
+### Display
+- List profiles (clusters)    
+  `minikube profile list`    
+- Show node processes    
+  `kubectl top node`    
+- Show services    
+  `kubectl get services -n dev-to`  
+- Show replicas    
+  `kubectl get rs -n dev-to`
+- Show pods    
+  `kubectl get pods -n dev-to`  
+- Show pod processes    
+  `kubectl top pod <nome_do_pod>`  
 
-kubectl top node
-
-kubectl top pod <nome_do_pod>
-```
+### Action
+- Delete pod    
+  `kubectl delete pod -n dev-to <pod_name>`    
+- Start all from beginning (make script)    
+  `make k:all`      
+- Start cluster    
+  `minikube -p dev.to start`    
+- Stop cluster    
+  `minikube -p dev.to stop`    
+- Delete cluster    
+  `minikube -p dev.to delete`    
