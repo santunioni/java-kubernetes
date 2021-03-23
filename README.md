@@ -1,4 +1,34 @@
-[TOC]
+<!--ts-->
+   * [Java and Kubernetes](#java-and-kubernetes)
+      * [Part one - base app:](#part-one---base-app)
+         * [Requirements:](#requirements)
+         * [Build and run application:](#build-and-run-application)
+      * [Part two - app on Docker:](#part-two---app-on-docker)
+      * [Part three - app on Kubernetes:](#part-three---app-on-kubernetes)
+         * [Prepare](#prepare)
+         * [Dashboard](#dashboard)
+         * [Database](#database)
+         * [Prepare Application](#prepare-application)
+            * [(First option) Cache your already created Docker image to kubernetes](#first-option-cache-your-already-created-docker-image-to-kubernetes)
+            * [(Second option) Build image inside Kubernetes](#second-option-build-image-inside-kubernetes)
+         * [Deploy Application](#deploy-application)
+         * [Inspections](#inspections)
+         * [Manage infrastructure](#manage-infrastructure)
+         * [Debug app within Kubernetes:](#debug-app-within-kubernetes)
+      * [Good practices](#good-practices)
+      * [Tools](#tools)
+         * [Switch namespaces with <a href="https://github.com/ahmetb/kubectx"><strong>kubens</strong></a>](#switch-namespaces-with-kubens)
+         * [Collect logs from all pods with <a href="https://github.com/wercker/stern"><strong>stern</strong></a>](#collect-logs-from-all-pods-with-stern)
+      * [References](#references)
+      * [Useful commands](#useful-commands)
+         * [Display](#display)
+         * [Action](#action)
+
+<!-- Added by: santunioni, at: Tue 23 Mar 2021 08:23:24 PM -03 -->
+
+<!--te-->
+
+--------------------
 
 # Java and Kubernetes
 
@@ -283,10 +313,24 @@ We have an application in a docker container. Now, we deploy application in a ku
     `kubectl port-forward -n dev-to <pod_name> 5005:5005`
 3. Configure a remote debug in IntelliJ
 
-## KubeNs and Stern
+## Good practices
 
-`kubens dev-to`    
-`stern myapp` 
+- Use JRE images, not JDK
+- Automate everything possible
+- Use Environment variables
+- Health Check
+- Application info
+- Monitoring / Logs
+
+## Tools
+### Switch namespaces with [**kubens**](https://github.com/ahmetb/kubectx)    
+- access a namespace with    
+`kubens dev-to`
+
+### Collect logs from all pods with [**stern**](https://github.com/wercker/stern)    
+- Collect logs    
+`stern myapp`    
+- Microservices hint: put a track id (some hash) to the data for tracking the data flux     
 ## References
 https://kubernetes.io/docs/home/    
 https://minikube.sigs.k8s.io/docs/
