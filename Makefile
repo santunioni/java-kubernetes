@@ -55,20 +55,22 @@ k-setup:
 	minikube -p dev.to start --cpus 2 --memory=4096; \
 	minikube -p dev.to addons enable ingress; \
 	minikube -p dev.to addons enable metrics-server; \
-	kubectl create namespace dev-to
+	minikube -p dev.to kubectl create namespace dev-to
 
 k-deploy-db:
+	docker pull mysql/mysql-server:5.7; \
+	minikube -p dev.to cache add mysql/mysql-server:5.7; \
 	kubectl apply -f k8s/mysql/;
 
 k-build-app:
-	mvn clean install; \
-	docker build --force-rm -t java-k8s .
+	./mvnww clean install; \
+	docker build --force-rm -t java-k8s:latest .
 
 k-build-image:
-	eval $$(minikube -p dev.to docker-env) && docker build --force-rm -t java-k8s .;
+	eval $$(minikube -p dev.to docker-env) && docker build --force-rm -t java-k8s:latest .;
 
 k-cache-image:
-	minikube cache add java-k8s;
+	minikube cache add java-k8s:latest;
 
 k-deploy-app:
 	kubectl apply -f k8s/app/;
@@ -82,7 +84,7 @@ k-delete-db:
 k-start:
 	minikube -p dev.to start;
 
-k-all: k-setup k-deploy-db k-build-app k-build-image k-deploy-app
+k-all: k-setup k-deploy-db k-build-app k-cache-image k-deploy-app
 
 k-stop:
 	minikube -p dev.to stop;
