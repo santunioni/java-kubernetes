@@ -63,7 +63,7 @@ k-deploy-db:
 	kubectl apply -f k8s/mysql/;
 
 k-build-app:
-	./mvnww clean install; \
+	./mvnw clean install; \
 	docker build --force-rm -t java-k8s:latest .
 
 k-build-image:
