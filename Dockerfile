@@ -1,4 +1,4 @@
-FROM openjdk:11
+FROM leegreiner/11-jre-alpine
 
 RUN mkdir /usr/myapp
 

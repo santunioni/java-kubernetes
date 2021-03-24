@@ -77,7 +77,7 @@ Spring boot and mysql database running on docker
 
 1. **Create a Dockerfile:**    
     ```yaml
-    FROM openjdk:11
+    FROM leegreiner/11-jre-alpine
     RUN mkdir /usr/myapp
     COPY target/java-kubernetes.jar /usr/myapp/app.jar
     WORKDIR /usr/myapp
@@ -324,6 +324,8 @@ https://minikube.sigs.k8s.io/docs/
 ## Useful commands
 
 ### Display
+- Dashboard    
+  `minikube -p dev.to dashboard`    
 - List profiles (clusters)    
   `minikube profile list`    
 - Show node processes    
